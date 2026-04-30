@@ -1,62 +1,59 @@
-/**
- * Parses .env file content into a key-value map.
- * Handles comments, blank lines, quoted values, and inline comments.
- */
-
-export type EnvMap = Map<string, string>;
-
-const LINE_REGEX = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/;
-const COMMENT_REGEX = /^\s*#/;
+export type EnvMap = Record<string, string>;
 
 /**
- * Parse raw .env file content into an EnvMap.
+ * Parses the contents of a .env file into a key-value map.
+ * Supports:
+ *  - KEY=VALUE
+ *  - KEY="VALUE" or KEY='VALUE'
+ *  - # comments
+ *  - blank lines
  */
 export function parseEnv(content: string): EnvMap {
-  const map: EnvMap = new Map();
-  const lines = content.split(/\r?\n/);
+  const result: EnvMap = {};
 
-  for (const line of lines) {
-    if (!line.trim() || COMMENT_REGEX.test(line)) {
-      continue;
-    }
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim();
 
-    const match = LINE_REGEX.exec(line);
-    if (!match) {
-      continue;
-    }
+    // Skip blank lines and comments
+    if (!line || line.startsWith('#')) continue;
 
-    const key = match[1];
-    let value = match[2];
+    const eqIndex = line.indexOf('=');
+    if (eqIndex === -1) continue;
 
-    // Strip surrounding quotes (single or double)
+    const key = line.slice(0, eqIndex).trim();
+    let value = line.slice(eqIndex + 1).trim();
+
+    if (!key) continue;
+
+    // Strip surrounding quotes
     if (
       (value.startsWith('"') && value.endsWith('"')) ||
       (value.startsWith("'") && value.endsWith("'"))
     ) {
       value = value.slice(1, -1);
-    } else {
-      // Strip inline comments for unquoted values
-      const inlineComment = value.indexOf(' #');
-      if (inlineComment !== -1) {
-        value = value.slice(0, inlineComment).trimEnd();
-      }
     }
 
-    map.set(key, value);
+    result[key] = value;
   }
 
-  return map;
+  return result;
 }
 
 /**
- * Serialize an EnvMap back to .env file content.
+ * Serializes an EnvMap back to .env file format.
+ * Keys are sorted alphabetically for deterministic output.
  */
 export function serializeEnv(map: EnvMap): string {
-  const lines: string[] = [];
-  for (const [key, value] of map.entries()) {
-    const needsQuotes = /\s|#|'|"/.test(value);
-    const serializedValue = needsQuotes ? `"${value.replace(/"/g, '\\"')}"` : value;
-    lines.push(`${key}=${serializedValue}`);
-  }
-  return lines.join('\n') + (lines.length > 0 ? '\n' : '');
+  return (
+    Object.keys(map)
+      .sort()
+      .map((key) => {
+        const value = map[key];
+        // Quote values that contain spaces or special characters
+        const needsQuotes = /[\s#"'\\]/.test(value) || value === '';
+        const serializedValue = needsQuotes ? `"${value}"` : value;
+        return `${key}=${serializedValue}`;
+      })
+      .join('\n') + '\n'
+  );
 }
