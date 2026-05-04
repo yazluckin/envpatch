@@ -1,96 +1,57 @@
 import { EnvMap } from './parser';
 
-export type ChangeType = 'added' | 'removed' | 'modified' | 'unchanged';
+export type ChangeType = 'added' | 'removed' | 'changed' | 'unchanged';
 
-export interface DiffEntry {
-  key: string;
+export interface EnvChange {
   type: ChangeType;
-  oldValue?: string;
-  newValue?: string;
+  prev?: string;
+  next?: string;
 }
 
-export interface DiffResult {
-  entries: DiffEntry[];
-  hasChanges: boolean;
-  summary: {
-    added: number;
-    removed: number;
-    modified: number;
-    unchanged: number;
-  };
-}
+export type DiffResult = Record<string, EnvChange>;
 
 /**
- * Computes a diff between two env maps.
- * Values are compared but not exposed in the result for security.
- * @param base - The base/original env map
- * @param target - The target/new env map
- * @param exposeValues - Whether to include actual values in the diff (default: false)
+ * Computes the diff between two EnvMaps.
+ * Returns only keys that have changed (added, removed, or modified).
  */
-export function diffEnv(
-  base: EnvMap,
-  target: EnvMap,
-  exposeValues = false
-): DiffResult {
-  const entries: DiffEntry[] = [];
+export function diffEnv(base: EnvMap, target: EnvMap): DiffResult {
+  const result: DiffResult = {};
   const allKeys = new Set([...Object.keys(base), ...Object.keys(target)]);
 
-  const summary = { added: 0, removed: 0, modified: 0, unchanged: 0 };
+  for (const key of allKeys) {
+    const inBase = key in base;
+    const inTarget = key in target;
 
-  for (const key of [...allKeys].sort()) {
-    const inBase = Object.prototype.hasOwnProperty.call(base, key);
-    const inTarget = Object.prototype.hasOwnProperty.call(target, key);
-
-    if (!inBase && inTarget) {
-      summary.added++;
-      entries.push({
-        key,
-        type: 'added',
-        newValue: exposeValues ? target[key] : undefined,
-      });
-    } else if (inBase && !inTarget) {
-      summary.removed++;
-      entries.push({
-        key,
-        type: 'removed',
-        oldValue: exposeValues ? base[key] : undefined,
-      });
+    if (inBase && !inTarget) {
+      result[key] = { type: 'removed', prev: base[key] };
+    } else if (!inBase && inTarget) {
+      result[key] = { type: 'added', next: target[key] };
     } else if (base[key] !== target[key]) {
-      summary.modified++;
-      entries.push({
-        key,
-        type: 'modified',
-        oldValue: exposeValues ? base[key] : undefined,
-        newValue: exposeValues ? target[key] : undefined,
-      });
-    } else {
-      summary.unchanged++;
-      entries.push({ key, type: 'unchanged' });
+      result[key] = { type: 'changed', prev: base[key], next: target[key] };
     }
   }
 
-  return {
-    entries,
-    hasChanges: summary.added + summary.removed + summary.modified > 0,
-    summary,
-  };
+  return result;
 }
 
 /**
- * Returns a human-readable summary of the diff.
+ * Formats a human-readable summary of a diff result.
  */
 export function formatDiffSummary(diff: DiffResult): string {
-  const { added, removed, modified, unchanged } = diff.summary;
-  const lines: string[] = [];
+  const added: string[] = [];
+  const removed: string[] = [];
+  const changed: string[] = [];
 
-  if (!diff.hasChanges) {
-    return 'No changes detected.';
+  for (const [key, change] of Object.entries(diff)) {
+    if (change.type === 'added') added.push(key);
+    else if (change.type === 'removed') removed.push(key);
+    else if (change.type === 'changed') changed.push(key);
   }
 
-  if (added > 0) lines.push(`  + ${added} added`);
-  if (removed > 0) lines.push(`  - ${removed} removed`);
-  if (modified > 0) lines.push(`  ~ ${modified} modified`);
-  if (unchanged > 0) lines.push(`    ${unchanged} unchanged`);
-
+  const lines: string[] = [];
+  if (added.length > 0) lines.push(`+ Added: ${added.join(', ')}`);
+  if (removed.length > 0) lines.push(`- Removed: ${removed.join(', ')}`);
+  if (changed.length > 0) lines.push(`~ Changed: ${changed.join(', ')}`);
+  if (lines.length === 0) return 'No differences found.';
   return lines.join('\n');
 }
