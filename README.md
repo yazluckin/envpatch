@@ -23,6 +23,9 @@ envpatch merge .env.local env.patch.json --output .env.merged
 
 # Show added/removed/changed keys without exposing values
 envpatch diff .env.staging .env.production --keys-only
+
+# Validate that all required keys from a reference file are present
+envpatch validate .env.local --reference .env.example
 ```
 
 **Example output:**
@@ -36,7 +39,7 @@ envpatch diff .env.staging .env.production --keys-only
 ### Programmatic Usage
 
 ```ts
-import { diffEnv, mergeEnv } from "envpatch";
+import { diffEnv, mergeEnv, validateEnv } from "envpatch";
 
 const patch = diffEnv(".env.local", ".env.production");
 console.log(patch.added);   // ['NEW_FEATURE_FLAG']
@@ -44,6 +47,10 @@ console.log(patch.changed); // ['DATABASE_URL']
 console.log(patch.removed); // ['LEGACY_API_KEY']
 
 mergeEnv(".env.local", patch, { output: ".env.merged" });
+
+// Check that .env.local has all keys defined in .env.example
+const result = validateEnv(".env.local", { reference: ".env.example" });
+console.log(result.missing); // ['STRIPE_SECRET_KEY']
 ```
 
 ## Options
@@ -52,6 +59,7 @@ mergeEnv(".env.local", patch, { output: ".env.merged" });
 |------|-------------|
 | `--keys-only` | Show only key names, never values |
 | `--output <file>` | Write result to a file instead of stdout |
+| `--reference <file>` | Reference env file to validate against |
 | `--silent` | Suppress warnings |
 
 ## Contributing
