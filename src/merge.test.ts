@@ -55,6 +55,15 @@ describe('mergeEnv', () => {
     mergeEnv(base, diff);
     expect(base.PORT).toBe('3000');
   });
+
+  it('handles an empty diff without errors', () => {
+    const diff: DiffResult = {};
+    const { merged, added, overwritten, conflicts } = mergeEnv(base, diff);
+    expect(merged).toEqual(base);
+    expect(added).toHaveLength(0);
+    expect(overwritten).toHaveLength(0);
+    expect(conflicts).toHaveLength(0);
+  });
 });
 
 describe('formatMergeSummary', () => {
