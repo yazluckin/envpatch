@@ -59,6 +59,14 @@ export function applyPromote(target: EnvMap, result: PromoteResult): EnvMap {
   return next;
 }
 
+/**
+ * Returns true if the promote result contains no promoted keys,
+ * meaning the source had no new or overwritable values for the target.
+ */
+export function isPromoteResultEmpty(result: PromoteResult): boolean {
+  return Object.keys(result.promoted).length === 0;
+}
+
 export function formatPromoteSummary(
   result: PromoteResult,
   maskSecrets = true
