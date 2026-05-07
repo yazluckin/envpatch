@@ -4,13 +4,19 @@ import { validateEnv, formatValidationSummary, EnvSchema, ValidationResult } fro
 
 /**
  * Reads and parses an .env file, then validates it against the provided schema.
- * Throws if the file cannot be read.
+ * Throws if the file cannot be read or does not exist.
  */
 export function validateEnvFile(
   filePath: string,
   schema: EnvSchema
 ): ValidationResult {
-  const raw = fs.readFileSync(filePath, "utf-8");
+  let raw: string;
+  try {
+    raw = fs.readFileSync(filePath, "utf-8");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to read env file "${filePath}": ${message}`);
+  }
   const env = parseEnv(raw);
   return validateEnv(env, schema);
 }
