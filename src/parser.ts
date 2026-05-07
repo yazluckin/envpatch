@@ -57,3 +57,27 @@ export function serializeEnv(map: EnvMap): string {
       .join('\n') + '\n'
   );
 }
+
+/**
+ * Merges a patch map into a base EnvMap, returning a new EnvMap.
+ * Keys present in the patch override those in the base.
+ * Keys with a value of `undefined` in the patch are removed from the result.
+ *
+ * @param base - The original environment map.
+ * @param patch - A partial map of overrides; set a key to `undefined` to delete it.
+ * @returns A new EnvMap with the patch applied.
+ */
+export function applyPatch(
+  base: EnvMap,
+  patch: Record<string, string | undefined>
+): EnvMap {
+  const result: EnvMap = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) {
+      delete result[key];
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
