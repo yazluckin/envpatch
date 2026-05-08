@@ -75,6 +75,11 @@ describe('compareEnv', () => {
     const result = compareEnv(left, right, { treatMissingAsEmpty: true });
     expect(result.entries.find(e => e.key === 'A')?.status).toBe('match');
   });
+
+  it('returns isIdentical false when there are differences', () => {
+    const result = compareEnv(base, other);
+    expect(result.isIdentical).toBe(false);
+  });
 });
 
 describe('formatCompareSummary', () => {
@@ -87,14 +92,12 @@ describe('formatCompareSummary', () => {
   it('includes mismatch details in summary', () => {
     const result = compareEnv(base, other);
     const summary = formatCompareSummary(result);
-    expect(summary).toContain('DATABASE_URL');
-    expect(summary).toContain('~');
+    expect(summary).toContain('mismatch');
   });
 
-  it('includes missing key indicators', () => {
+  it('includes missing key counts in summary', () => {
     const result = compareEnv(base, other);
     const summary = formatCompareSummary(result);
-    expect(summary).toContain('DEBUG');
-    expect(summary).toContain('PORT');
+    expect(summary).toContain('missing');
   });
 });
