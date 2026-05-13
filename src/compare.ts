@@ -88,12 +88,12 @@ export function formatCompareSummary(result: CompareResult): string {
   if (issues.length > 0) {
     lines.push('');
     for (const entry of issues) {
-      if (entry.status === 'mismatch') {
-        lines.push(`  ~ ${entry.key}: "${entry.leftValue}" → "${entry.rightValue}"`);
-      } else if (entry.status === 'missing_left') {
-        lines.push(`  + ${entry.key}: (missing) → "${entry.rightValue}"`);
+      if (entry.status === 'missing_left') {
+        lines.push(`  ← ${entry.key} (only in right: ${entry.rightValue ?? ''})`);
       } else if (entry.status === 'missing_right') {
-        lines.push(`  - ${entry.key}: "${entry.leftValue}" → (missing)`);
+        lines.push(`  → ${entry.key} (only in left: ${entry.leftValue ?? ''})`);
+      } else {
+        lines.push(`  ⚠️  ${entry.key}: "${entry.leftValue ?? ''}" → "${entry.rightValue ?? ''}"`); 
       }
     }
   }
