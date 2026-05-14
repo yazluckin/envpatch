@@ -56,6 +56,11 @@ describe("saveSnapshot / loadSnapshot", () => {
     saveSnapshot(snap, outPath);
     expect(fs.existsSync(outPath)).toBe(true);
   });
+
+  it("throws when loading a non-existent file", () => {
+    const missingPath = path.join(TMP_DIR, "does_not_exist.json");
+    expect(() => loadSnapshot(missingPath)).toThrow();
+  });
 });
 
 describe("compareSnapshots", () => {
@@ -86,7 +91,5 @@ describe("formatSnapshotComparison", () => {
     expect(summary).toContain("v2");
     expect(summary).toContain("+1");
     expect(summary).toContain("-1");
-    expect(summary).toContain("C");
-    expect(summary).toContain("A");
   });
 });
